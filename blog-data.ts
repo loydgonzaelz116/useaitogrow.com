@@ -1,38 +1,29 @@
 
-import { supabase } from './supabaseClient';
+// NOTE: read_time column has been removed from select queries as it does not exist in Supabase
 
-// Helper function to calculate read time from content word count
-export function calculateReadTime(content: string): number {
-  const wordsPerMinute = 200;
-  const wordCount = content.trim().split(/\s+/).length;
-  return Math.ceil(wordCount / wordsPerMinute);
-}
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_ANON_KEY!
+);
 
 export async function getAllPosts() {
   const { data, error } = await supabase
     .from('posts')
-    .select('id, title, slug, excerpt, content, created_at, updated_at, author, tags')
-    .order('created_at', { ascending: false });
+    .select('id, title, slug, excerpt, published_at, author, tags, cover_image');
 
   if (error) throw error;
-
-  return (data ?? []).map((post) => ({
-    ...post,
-    read_time: calculateReadTime(post.content ?? ''),
-  }));
+  return data;
 }
 
 export async function getPostBySlug(slug: string) {
   const { data, error } = await supabase
     .from('posts')
-    .select('id, title, slug, excerpt, content, created_at, updated_at, author, tags')
+    .select('id, title, slug, excerpt, content, published_at, author, tags, cover_image')
     .eq('slug', slug)
     .single();
 
   if (error) throw error;
-
-  return {
-    ...data,
-    read_time: calculateReadTime(data.content ?? ''),
-  };
+  return data;
 }
